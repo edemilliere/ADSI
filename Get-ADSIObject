@@ -10,12 +10,18 @@ Function Get-ADSIObject{
             Property to return.
         .PARAMETER PageSize
             PageSize to use for the query.
+        .PARAMETER SearchBAse
+            SearchBase to scope the query.
         .EXAMPLE
             Get-ADSIObject -Verbose
         .EXAMPLE
             Get-ADSIObject -NamingContext 'DC=D2K16,DC=itfordummies,DC=net' -LDAPFilter '(admincount=1)' -Verbose
         .EXAMPLE
             Get-ADSIObject -DomainName D2K12R2.itfordummies.net -LDAPFilter '(admincount=1)' -NamingContext 'DC=D2K12R2,DC=itfordummies,DC=net'
+        .EXAMPLE
+            Get-ADSIObject -Property Name,Mail,description -Verbose -SearchBase 'OU=Users,OU=Star Wars,OU=Prod,DC=D2K16,DC=itfordummies,DC=net' | Out-GridView
+        .LINK
+            https://ItForDummies.net
     #>
     [CmdletBinding()]
     Param(
@@ -28,6 +34,8 @@ Function Get-ADSIObject{
         [Parameter(Position=2)]
         [ValidateScript({Test-Connection -ComputerName $_ -Count 2 -Quiet})]
         [String]$DomainName = [DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().Name,
+
+        [String]$SearchBase,
 
         [Int]$PageSize = 1000
     )
@@ -56,13 +64,20 @@ Function Get-ADSIObject{
         $ADSISearcher = [ADSISearcher]"$LDAPFilter"
         #Load each property if requested
         if($Property){
-            $Property | ForEach-Object -Process {$ADSISearcher.PropertiesToLoad.Add($_.ToLower())} | Out-Null
+            $Property | ForEach-Object -Process {
+                Write-Verbose -Message "Adding $_ to properties to load..."
+                $ADSISearcher.PropertiesToLoad.Add($_.ToLower())
+            } | Out-Null
         }
         
         #Use Naming Context if specified, otherwise, use the domain name
         if($NamingContext){
             Write-Verbose -Message "Will use $NamingContext."
             $ADSISearcher.SearchRoot = [ADSI]"LDAP://$NamingContext"
+        }
+        elseif($SearchBase){
+            Write-Verbose -Message "Will use $SearchBase."
+            $ADSISearcher.SearchRoot = [ADSI]"LDAP://$SearchBase"
         }
         else{
             Write-Verbose -Message "Will use $DomainName."
