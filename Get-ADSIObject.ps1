@@ -22,6 +22,8 @@ Function Get-ADSIObject{
             Get-ADSIObject -Property Name,Mail,description -Verbose -SearchBase 'OU=Users,OU=Star Wars,OU=Prod,DC=D2K16,DC=itfordummies,DC=net' | Out-GridView
         .LINK
             https://ItForDummies.net
+        .NOTES
+            Futur updates : #Credential, Server, searchscope
     #>
     [CmdletBinding()]
     Param(
